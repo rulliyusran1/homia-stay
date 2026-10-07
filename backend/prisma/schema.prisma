@@ -1,0 +1,119 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum RoomStatus {
+  AVAILABLE
+  OCCUPIED
+  MAINTENANCE
+  OVERDUE
+}
+
+enum PaymentStatus {
+  PAID
+  PENDING
+  LATE
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  URGENT
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+model Property {
+  id        String   @id @default(uuid())
+  name      String
+  address   String
+  rooms     Room[]
+  createdAt DateTime @default(now())
+}
+
+model Room {
+  id           String      @id @default(uuid())
+  propertyId   String
+  property     Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  roomNumber   String
+  floor        Int
+  priceMonthly Decimal     @db.Decimal(10, 2)
+  status       RoomStatus  @default(AVAILABLE)
+  tenants      Tenant[]
+  bills        Bill[]
+  tickets      MaintenanceTicket[]
+  smartLocks   SmartLock[]
+  createdAt    DateTime    @default(now())
+}
+
+model Tenant {
+  id              String        @id @default(uuid())
+  roomId          String?
+  room            Room?         @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  fullName        String
+  phone           String        @unique
+  email           String?
+  emergencyContact String
+  idCardUrl       String?
+  checkInDate     DateTime
+  checkOutDate    DateTime?
+  leases          LeaseAgreement[]
+  bills           Bill[]
+  tickets         MaintenanceTicket[]
+  createdAt       DateTime      @default(now())
+}
+
+model LeaseAgreement {
+  id          String    @id @default(uuid())
+  tenantId    String
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  startDate   DateTime
+  endDate     DateTime
+  depositPaid Decimal   @db.Decimal(10, 2)
+  isActive    Boolean   @default(true)
+}
+
+model Bill {
+  id            String        @id @default(uuid())
+  roomId        String
+  room          Room          @relation(fields: [roomId], references: [id])
+  tenantId      String
+  tenant        Tenant        @relation(fields: [tenantId], references: [id])
+  amount        Decimal       @db.Decimal(10, 2)
+  utilityCost   Decimal       @default(0.00) @db.Decimal(10, 2)
+  dueDate       DateTime
+  status        PaymentStatus @default(PENDING)
+  invoiceNumber String        @unique
+  createdAt     DateTime      @default(now())
+}
+
+model MaintenanceTicket {
+  id          String         @id @default(uuid())
+  roomId      String
+  room        Room           @relation(fields: [roomId], references: [id])
+  tenantId    String
+  tenant      Tenant         @relation(fields: [tenantId], references: [id])
+  title       String
+  description String
+  priority    TicketPriority @default(MEDIUM)
+  status      TicketStatus   @default(OPEN)
+  createdAt   DateTime       @default(now())
+}
+
+model SmartLock {
+  id         String   @id @default(uuid())
+  roomId     String
+  room       Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  passcode   String
+  validUntil DateTime
+  isActive   Boolean  @default(true)
+}

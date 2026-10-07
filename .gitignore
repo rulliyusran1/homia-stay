@@ -1,0 +1,15 @@
+# Ignore dependencies
+node_modules/
+
+# Ignore Next.js build files
+.next/
+dist/
+build/
+
+# Ignore secret environment variables and database URLs
+.env
+.env.local
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
